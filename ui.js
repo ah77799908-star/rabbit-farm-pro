@@ -138,7 +138,7 @@
 
     out += '<div class="card"><h3>🔔 التنبيهات (' + A.length + ')</h3>' +
       (A.length ? A.map(function (a) {
-        return '<div class="row tap" onclick=\'UI.jump(' + JSON.stringify(a.go || {}).replace(/'/g, "\\'") + ')\'><span>' + a.i + ' ' + esc(a.txt) + '</span><span class="tag ' + a.c + '">›</span></div>';
+        return '<div class="row tap" onclick=\'UI.jump(' + JSON.stringify(a.go || {}).replace(/'/g, "\\'") + ')\'><span>' + a.i + ' ' + esc(a.txt) + '</span><span class="chev">›</span></div>';
       }).join('') : '<div class="empty">مفيش تنبيهات النهاردة 👌</div>') + '</div>';
 
     var soon = Core.activeDoes(s).map(function (d) { return { d: d, st: Core.status(s, d.id) }; })
