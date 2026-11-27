@@ -197,3 +197,35 @@ test('القطيع: العدادات', () => {
   assert.equal(h.preg, 1); assert.equal(h.nurs, 1); assert.equal(h.kits, 5);
   assert.equal(h.weaned, 4); assert.equal(h.ready, 4);
 });
+
+test('استيراد نسخة البرنامج القديم', () => {
+  require('../core.js');
+  require('../store.js');
+  const Store = globalThis.Store;
+  const old = {
+    does: [{ id: 'd1', num: '1', note: '' }, { id: 'd2', num: '2', note: 'هدية' }],
+    bucks: ['A'],
+    bk: [{ id: 'bk_A', name: 'A', ws: [{ d: '2026-11-01', k: 4.5 }], out: false, breed: 'نيوزيلندي' }],
+    matings: [{ id: 'm1', doe: 'd1', buck: 'A', date: '2026-11-01', result: 'born' }],
+    births: [{ id: 'bi1', doe: 'd1', buck: 'A', date: '2026-12-02', alive: 7, dead: 1, weaned: true, weanDate: '2027-01-06', weanedCount: 7 }],
+    wean: [{ id: 'w1', num: '3', date: '2027-01-06', count: 7, doe: 'd1', ws: [{ d: '2027-01-06', g: 640 }], dead: 0, sold: 0, closed: false }],
+    sales: [{ id: 's1', date: '2027-02-01', count: 3, total: 900, buyer: 'محمود', doe: 'd1', weight: 8, kilo: 112 }],
+    inj: [{ id: 'i1', name: 'فيتامين', doe: 'd1', date: '2026-11-02', dose: '0.5', next: '2026-12-02' }],
+    meds: [{ id: 'md1', name: 'مضاد', doe: '', date: '2026-11-02', days: [0, 3] }],
+    set: { gest: 31, palp: 14, nest: 28, wean: 35, wtarget: 1800 }
+  };
+  global.localStorage = { _d: {}, getItem(k) { return this._d[k] || null; }, setItem(k, v) { this._d[k] = v; }, removeItem(k) { delete this._d[k]; } };
+  const res = Store.importOld(old);
+  assert.equal(res.does, 2);
+  assert.equal(res.bucks, 1);
+  assert.equal(Store.S.bucks[0].num, 'A');
+  assert.equal(Store.S.matings[0].buck, 'bk_A', 'اسم الذكر اتحوّل لـ id');
+  assert.equal(Store.S.births[0].weanedCount, 7);
+  assert.equal(Store.S.batches[0].count, 7);
+  assert.equal(Store.S.sales[0].cust.length > 0, true, 'اتعمل عميل من اسم المشتري');
+  assert.equal(Store.S.sales[0].paid, true);
+  assert.equal(Store.S.inj[0].target, 'doe');
+  assert.equal(Store.S.meds[0].target, 'all');
+  assert.equal(Store.S.set.wtarget, 1800);
+  assert.equal(Store.S.does[1].note, 'هدية');
+});
