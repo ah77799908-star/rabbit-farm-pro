@@ -314,6 +314,10 @@
       (auto ? '<div class="m">آخر نسخة تلقائية: ' + new Date(auto.at).toLocaleString('ar-EG') + (auto.why ? ' — ' + esc(auto.why) : '') + '</div>' +
         '<button class="btn s wide mt8" onclick="UI.restoreAuto()">استرجاع النسخة التلقائية</button>'
         : '<div class="m">لسه مفيش نسخة تلقائية. بتتعمل لوحدها قبل أي استرجاع.</div>') + '</div>' +
+      '<div class="card"><h3>📥 استيراد من النسخة القديمة</h3>' +
+      '<div class="m">لو عندك نسخة احتياطية من البرنامج القديم (ملف rabbits-backup)، ارفعها هنا وهيتنقل الإناث والذكور والتزاوج والولادات والدفعات والمبيعات.</div>' +
+      '<button class="btn s wide mt8" onclick="document.getElementById(\'impOld\').click()">استيراد نسخة البرنامج القديم</button>' +
+      '<input type="file" id="impOld" accept=".json,application/json" hidden onchange="UI.importOld(this)"></div>' +
       '<div class="card"><button class="btn s wide" onclick="UI.exportCSV()">📊 تصدير Excel (CSV)</button></div>' +
       '<div class="card"><h3>🧹 مسح البيانات</h3><div class="m">يمسح كل حاجة على الجهاز ده (بعد ما ياخد نسخة تلقائية).</div>' +
       '<button class="btn d wide mt8" onclick="UI.wipe()">مسح كل البيانات</button></div>';
@@ -346,5 +350,25 @@
     UI.confirm('إيقاف المزامنة على الجهاز ده؟ بياناتك هتفضل عليه.', function () {
       Store.syncOff(); UI.render(); UI.toast('اتقفلت');
     });
+  };
+
+  UI.importOld = function (input) {
+    var f = input.files && input.files[0];
+    if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      var o;
+      try { o = JSON.parse(r.result); } catch (e) { return UI.toast('الملف مش صالح'); }
+      if (!Store.isOldFormat(o)) return UI.toast('ده مش ملف البرنامج القديم');
+      UI.confirm('هيتم استبدال البيانات الحالية ببيانات النسخة القديمة (وهنحفظ نسخة تلقائية قبلها).', function () {
+        try {
+          var res = Store.importOld(o);
+          UI.render();
+          UI.toast('اتنقل ' + res.does + ' أنثى و ' + res.bucks + ' ذكر و ' + res.births + ' ولادة');
+        } catch (e) { UI.toast('حصلت مشكلة في الاستيراد'); }
+      });
+    };
+    r.readAsText(f);
+    input.value = '';
   };
 })(typeof window !== 'undefined' ? window : globalThis);
