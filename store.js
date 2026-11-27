@@ -106,6 +106,79 @@
       return true;
     },
 
+    /* ---- استيراد نسخة البرنامج القديم (rabbitfarm.v1) ---- */
+    isOldFormat: function (o) {
+      return !!o && Array.isArray(o.does) && Array.isArray(o.matings) && !Array.isArray(o.batches);
+    },
+    importOld: function (o) {
+      if (!Store.isOldFormat(o)) throw new Error('not-old');
+      var n = blank(), map = {};
+      (o.set || {}) && Object.keys(n.set).forEach(function (k) { if (o.set[k] != null) n.set[k] = +o.set[k] || n.set[k]; });
+      (o.does || []).forEach(function (d) {
+        var id = d.id || Core.uid();
+        map['doe:' + d.id] = id;
+        n.does.push({ id: id, num: String(d.num), note: d.note || '', created: d.created || '' });
+      });
+      var bucks = (o.bk && o.bk.length) ? o.bk : (o.bucks || []).map(function (b) { return { id: 'bk_' + b, name: b, ws: [] }; });
+      bucks.forEach(function (b) {
+        var id = b.id || ('bk_' + b.name);
+        map['buck:' + b.name] = id;
+        n.bucks.push({
+          id: id, num: String(b.name), breed: b.breed || '', born: b.born || '', note: b.note || '',
+          ws: (b.ws || []).map(function (w) { return { d: w.d, k: +w.k || 0 }; }), out: !!b.out, outWhy: b.outWhy || ''
+        });
+      });
+      var custs = {};
+      function custFor(name) {
+        if (!name) return '';
+        if (!custs[name]) { custs[name] = Core.uid(); n.custs.push({ id: custs[name], name: name, phone: '' }); }
+        return custs[name];
+      }
+      (o.matings || []).forEach(function (m) {
+        n.matings.push({
+          id: m.id || Core.uid(), doe: map['doe:' + m.doe] || '', buck: map['buck:' + m.buck] || '',
+          date: m.date, result: m.result === 'pending' ? 'pending' : m.result === 'born' ? 'born' : 'failed',
+          palpated: !!m.palpated
+        });
+      });
+      (o.births || []).forEach(function (b) {
+        n.births.push({
+          id: b.id || Core.uid(), doe: map['doe:' + b.doe] || '', buck: map['buck:' + b.buck] || '',
+          date: b.date, alive: +b.alive || 0, dead: +b.dead || 0, weaned: !!b.weaned,
+          weanDate: b.weanDate || '', weanedCount: +b.weanedCount || 0
+        });
+      });
+      (o.wean || []).forEach(function (w) {
+        n.batches.push({
+          id: w.id || Core.uid(), num: w.num || '', date: w.date, count: +w.count || 0, doe: map['doe:' + w.doe] || '',
+          ws: (w.ws || []).map(function (x) { return { d: x.d, g: +x.g || 0 }; }), dead: +w.dead || 0, sold: +w.sold || 0,
+          closed: !!w.closed, note: w.note || '', loc: w.loc || ''
+        });
+      });
+      (o.sales || []).forEach(function (s) {
+        n.sales.push({
+          id: s.id || Core.uid(), date: s.date, count: +s.count || 0, total: +s.total || 0, weight: +s.weight || 0,
+          kilo: +s.kilo || 0, doe: map['doe:' + s.doe] || '', cust: custFor(s.buyer), paid: true, note: ''
+        });
+      });
+      (o.inj || []).forEach(function (x) {
+        var ref = map['doe:' + x.doe] || '';
+        n.inj.push({ id: x.id || Core.uid(), name: x.name, target: ref ? 'doe' : 'all', ref: ref, date: x.date, dose: x.dose || '', next: x.next || '', note: x.note || '', done: !!x.done });
+      });
+      (o.meds || []).forEach(function (x) {
+        var ref = map['doe:' + x.doe] || '';
+        n.meds.push({ id: x.id || Core.uid(), name: x.name, target: ref ? 'doe' : 'all', ref: ref, date: x.date, days: x.days || [0, 1, 2, 3, 4, 5, 6], dose: x.dose || '', end: x.end || '', note: x.note || '' });
+      });
+      Store.snapshot('قبل استيراد النسخة القديمة');
+      Store.S = migrate(n);
+      Store.S.ts = Date.now();
+      Store.rawSave();
+      return {
+        does: n.does.length, bucks: n.bucks.length, matings: n.matings.length, births: n.births.length,
+        batches: n.batches.length, sales: n.sales.length, custs: n.custs.length
+      };
+    },
+
     /* ---- مزامنة (Supabase عام، مفتاح منشور، البيانات مشفرة باسم الكود) ---- */
     SB_URL: 'https://bgwbbqcuntidvmwdppax.supabase.co',
     SB_KEY: 'sb_publishable_T2ERNz8uQYuC4I1XWFdi4w_ZV9Yu7pV',
